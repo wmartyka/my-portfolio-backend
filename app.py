@@ -22,7 +22,7 @@ def submit_form():
             return jsonify({'error': 'All fields are required'}), 400
 
         # Success response
-        return jsonify({'message': f'Thank you {name}, we will contact you at {email}.'}), 200
+        return jsonify({'message': f'Python Thanks you {name}, we will contact you at {email}.'}), 200
 
     except Exception as e:
         return jsonify({'error': 'Internal server error'}), 500
