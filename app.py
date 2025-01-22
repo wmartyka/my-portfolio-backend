@@ -57,7 +57,7 @@ def get_submissions():
             "id": sub.id,
             "name": sub.name,
             "email": sub.email,
-            "submitted_at": sub.submitted_at.strftime("%Y-%m-%d %H:%M:%S")
+            "submitted_at": sub.submitted_at.strftime("%B %d, %Y %I:%M %p")  # Example: January 22, 2025, 12:47 AM
         }
         for sub in submissions
     ]
