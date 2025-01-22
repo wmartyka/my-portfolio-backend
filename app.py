@@ -2,24 +2,32 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from datetime import datetime
+import pytz
 import os
 
 app = Flask(__name__)
 CORS(app)
 
-# Database configuration (SQLite or PostgreSQL via Render)
+# Database configuration for Render (PostgreSQL preferred, fallback to SQLite for local testing)
 DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///submissions.db')
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# Define the database model with a timestamp
+# Set the local timezone to Austin, TX (Central Time)
+local_timezone = pytz.timezone('America/Chicago')
+
+# Define database model for storing submissions
 class Submission(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100), nullable=False)
-    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)  # Store submission time
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)  # Store in UTC
+
+    def local_time(self):
+        """Convert UTC time to Austin (Central Time)"""
+        return self.submitted_at.replace(tzinfo=pytz.utc).astimezone(local_timezone)
 
 # Create the database tables if they don't exist
 with app.app_context():
@@ -39,12 +47,12 @@ def submit_form():
         if not name or not email:
             return jsonify({'error': 'All fields are required'}), 400
 
-        # Save submission to the database with timestamp
+        # Save submission to database with UTC time
         new_submission = Submission(name=name, email=email)
         db.session.add(new_submission)
         db.session.commit()
 
-        return jsonify({'message': f'The Python thanks you {name}, we will contact you at {email}.'}), 200
+        return jsonify({'message': f'Thank you {name}, we will contact you at {email}.'}), 200
 
     except Exception as e:
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
@@ -57,7 +65,7 @@ def get_submissions():
             "id": sub.id,
             "name": sub.name,
             "email": sub.email,
-            "submitted_at": sub.submitted_at.strftime("%B %d, %Y %I:%M %p")  # Example: January 22, 2025, 12:47 AM
+            "submitted_at": sub.local_time().strftime("%B %d, %Y %I:%M %p")  # Convert to CST/CDT with AM/PM
         }
         for sub in submissions
     ]
